@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+
+<head>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<div>
+  <canvas id="myChart"></canvas>
+</div>
+
+
+<script type="module">
+  //get json data
+  const json_url = "https://www.albion-online-data.com/api/v2/stats/History/T3_BAG.json?locations=2000&date=2023-03-01T18%3A00%3A00&end_date=2023-03-05T18%3A30%3A00&qualities=1&time-scale=6";
+
+
+  const response = await fetch(json_url);
+
+  if (response.ok) {
+    try {
+      //please use console.log(await responseData.json()) to see the data structure in browser console.
+      const responseData = await response.json();
+      const location = responseData[0].location;
+      const item_id = responseData[0].item_id;
+      const quality = responseData[0].quality;
+
+      const itemAtMarketplaceData = responseData[0].data;
+
+
+      const lineData = formatLineData(itemAtMarketplaceData, location, item_id, quality);
+      generateChart(lineData, location, item_id, quality);
+    } catch (error) {
+      console.error(error.stack);
+    }
+
+
+  } else {
+    alert("HTTP Request Failure");
+  }
+
+
+  function formatLineData(itemData) {
+
+    if (!Array.isArray(itemData)) {
+      throw Error("input data is not an array");
+    }
+
+
+
+    // format the incomming data as below structure
+
+    // data: {
+    //   datasets: [{
+    //     data: [{x: 10, y: 20}, {x: 15, y: null}, {x: 20, y: 10}]
+    //   }]
+    // }
+
+
+    return itemData.map(dataRow => {
+      // {item_count: 368, avg_price: 1278, timestamp: '2023-03-02T00:00:00'}
+      // => 
+      // {x: '2023-03-02T00:00:00', y: 1278}
+      return {
+        x: dataRow.timestamp,
+        y: dataRow.avg_price * 1 //convert to numbers to prevent syntax error
+      }
+    });
+  }
+  function generateChart(chartData, location, item_id, quality) {
+    const ctx = document.getElementById('myChart');
+    
+    const config = {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: `Quality ${quality}`,
+
+          data: chartData
+        }]
+      },
+
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            position: 'top',
+            display: true,
+            // text: `Quality ${quality}`
+          },
+          title: {
+            display: true,
+            text: `Item '${item_id}' Average Price at marketplace '${location}' `
+          }
+        }
+      },
+    };
+
+    new Chart(ctx, config);
+  }
+
+
+
+
+
+</script>
+
+
+
+</html>
